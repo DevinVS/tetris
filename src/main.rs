@@ -123,12 +123,8 @@ fn handle_events(engine: &mut TetrisEngine) {
                 match keycode {
                     Keycode::Left => engine.live_tetromino.left(&engine.tetris_map),
                     Keycode::Right => engine.live_tetromino.right(&engine.tetris_map),
-                    Keycode::Down => {
-                        while engine.live_tetromino.down(&engine.tetris_map) {}
-                    },
-                    Keycode::Up => {
-                        engine.live_tetromino.rotate(&engine.tetris_map);
-                    }
+                    Keycode::Down => engine.live_tetromino.down(&engine.tetris_map),
+                    Keycode::Up => engine.live_tetromino.rotate(&engine.tetris_map),
                     _ => {}
                 }
             },
