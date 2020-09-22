@@ -58,6 +58,9 @@ impl TetrisEngine {
                     }
                 }
             }
+
+            // If another row is filled after the blocks fall then delete it
+            self.delete_full_rows()
         }
     }
 
