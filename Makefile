@@ -1,3 +1,4 @@
+SRC=$(wildcard src/*.rs)
 TARGET=
 
 ifeq ($(OS),Windows_NT)
@@ -12,6 +13,10 @@ else
 	endif
 endif
 
-
-tetris: $(wildcard src/*.rs)
+tetris: $(SRC)
 	cargo build --target=$(TARGET) --release
+
+.PHONY: all
+all:
+	cargo build --target=x86_64-unknown-linux-gnu --release
+	cargo build --target=x86_64-pc-windows-gnu --release
