@@ -166,7 +166,7 @@ fn draw(engine: &mut TetrisEngine) {
             engine.canvas.set_draw_color(color_code_to_color(color_code));
 
             engine.canvas.fill_rect(
-                Rect::new(col as i32 * size as i32 + 280, row as i32*size as i32, size, size)
+                Rect::new(col as i32 * size as i32 + 140, row as i32*size as i32, size, size)
             ).unwrap();
         }
     }
