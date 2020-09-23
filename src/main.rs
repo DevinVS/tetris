@@ -26,50 +26,87 @@ struct TetrisEngine {
     event_loop: EventPump,
     canvas: Canvas<Window>,
     tetris_map: TetrisMap,
-    live_tetromino: Tetromino
+    live_tetromino: Tetromino,
+    score: usize,
+    level: usize,
+    rows_cleared: usize
 }
 
+const FMS: u32 = 1_000_000u32/60; // Duration of a frame, microseconds
+
 impl TetrisEngine {
+
     fn new(event_loop: EventPump, canvas: Canvas<Window>) -> Self {
         Self {
             running: true,
             event_loop,
             canvas,
             tetris_map: tetris::blank_tetris_map(),
-            live_tetromino: Tetromino::new()
+            live_tetromino: Tetromino::new(),
+            score: 0,
+            level: 0,
+            rows_cleared: 0,
+        }
+    }
+
+    fn get_delay(&self) -> u32 {
+
+        match self.level {
+            0 => 48*FMS,
+            1 => 42*FMS,
+            2 => 38*FMS,
+            3 => 33*FMS,
+            4 => 28*FMS,
+            5 => 23*FMS,
+            6 => 18*FMS,
+            7 => 13*FMS,
+            8 => 8*FMS,
+            9 => 6*FMS,
+            10..=12 => 5*FMS,
+            13..=15 => 4*FMS,
+            16..=18 => 3*FMS,
+            19..=28 => 2*FMS,
+            _ => FMS
         }
     }
 
     fn delete_full_rows(&mut self) {
-        let mut dropped = -1;
+        let mut dropped = 0;
 
         for row in 0..self.tetris_map.len()-1 {
             if self.tetris_map[row].iter().all(|x| x!=&0) {
-                dropped = row as isize;
-                self.tetris_map[row] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]; } }
-
-        if dropped != -1 {
+                dropped += 1;
+                self.tetris_map[row] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]; 
+            } 
 
             // Iterate over the rows above the deleted row
-            for row in (0..dropped as usize).rev() {
+            for up_row in (0..row as usize).rev() {
                 let mut contiguous_cells = Vec::<usize>::new();
                 let mut group = false;
 
                 for col in 0..self.tetris_map[0].len() {
-                    if self.tetris_map[row][col] > 1 {
+                    if self.tetris_map[up_row][col] > 1 {
                         group = true;
                         contiguous_cells.push(col);
                     } else if group {
-                        self.drop_group(row, &contiguous_cells);
+                        self.drop_group(up_row, &contiguous_cells);
                         contiguous_cells = Vec::<usize>::new();
                         group = false;
                     }
                 }
             }
-
-            // If another row is filled after the blocks fall then delete it
-            self.delete_full_rows()
         }
+        self.score += match dropped {
+            0 => 0,
+            1 => 40*(self.level+1),
+            2 => 100*(self.level+1),
+            3 => 300*(self.level+1),
+            4 => 1200*(self.level+1),
+            _ => 0
+        };
+
+        self.rows_cleared += dropped;
+        self.level = self.rows_cleared / 10;
     }
 
     fn drop_group(&mut self, mut row: usize, cols: &Vec<usize>) {
@@ -140,7 +177,8 @@ fn main() {
 
         handle_events(&mut engine);
 
-        if std::time::Instant::now().duration_since(start_time).as_secs_f32() > 0.35 {
+        println!("{}", engine.get_delay());
+        if std::time::Instant::now().duration_since(start_time).as_micros() > engine.get_delay() as u128 {
             update(&mut engine);
             start_time = std::time::Instant::now();
         }
@@ -171,6 +209,8 @@ fn handle_events(engine: &mut TetrisEngine) {
 
 fn update(engine: &mut TetrisEngine) {
     let moved = engine.live_tetromino.down(&engine.tetris_map);
+
+    println!("{}", engine.score);
 
     if !moved {
         if engine.live_tetromino.y == 0 {

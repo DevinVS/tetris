@@ -2,7 +2,7 @@ use super::TetrisMap;
 use rand::distributions::{Standard, Distribution};
 use rand::Rng;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TetrominoType {
     I,
     J,
@@ -115,7 +115,10 @@ impl Tetromino {
                         }
                     },
                     3 => {
-                        if tetromino_map[row][col] == 1 && tetris_map[self.y+3-col][self.x+row] != 0 {
+                        if tetromino_map[row][col] == 1 && (
+                            tetris_map[self.y+2-col][self.x+row] != 0 || 
+                            (self.variant == TetrominoType::I && tetris_map[self.y+3-col][self.x+row] != 0)
+                        ) {
                             return false;
                         }
                     },
@@ -151,8 +154,8 @@ impl Tetromino {
                         }
                     },
                     3 => {
-                        if tetromino_map[row][col] == 1 && tetris_map[self.y+3-col][self.x+row] == 0 {
-                            tetris_map[self.y+3-col][self.x+row] = color_code;
+                        if tetromino_map[row][col] == 1 && tetris_map[self.y+2-col][self.x+row] == 0 {
+                            tetris_map[self.y+2-col][self.x+row] = color_code;
                         }
                     },
                     _ => {}
@@ -162,6 +165,10 @@ impl Tetromino {
     }
 
     pub fn rotate(&mut self, tetris_map: &TetrisMap) {
+        if self.variant == TetrominoType::O {
+            return;
+        }
+
         self.rot = (self.rot+1) % 4;
 
         if !self.check(tetris_map) {
