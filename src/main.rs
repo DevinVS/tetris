@@ -6,10 +6,20 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::Duration;
 use sdl2::rect::Rect;
+use sdl2::rwops::RWops;
+use sdl2::render::TextureQuery;
 
 use tetris::tetromino::Tetromino;
 use tetris::TetrisMap;
 
+static baby_blocks_ttf: &'static [u8] = include_bytes!("fonts/baby_blocks.ttf");
+static vcr_osd_mono_ttf: &'static [u8] = include_bytes!("fonts/vcr_osd_mono.ttf");
+
+macro_rules! rect(
+    ($x:expr, $y:expr, $w:expr, $h:expr) => (
+        Rect::new($x as i32, $y as i32, $w as u32, $h as u32)
+    )
+);
 
 struct TetrisEngine {
     running: bool,
@@ -36,9 +46,7 @@ impl TetrisEngine {
         for row in 0..self.tetris_map.len()-1 {
             if self.tetris_map[row].iter().all(|x| x!=&0) {
                 dropped = row as isize;
-                self.tetris_map[row] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-            }
-        }
+                self.tetris_map[row] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]; } }
 
         if dropped != -1 {
 
@@ -89,10 +97,35 @@ fn main() {
         .build()
         .unwrap();
 
+
+    // Setup graphics context
     let mut canvas = window.into_canvas().build().unwrap();
+
+    // Load Fonts
+    let mut ttf_context = sdl2::ttf::init().unwrap();
+    let texture_creator = canvas.texture_creator();
+
+    let mut baby_blocks = ttf_context.load_font_from_rwops(
+        RWops::from_bytes(baby_blocks_ttf).unwrap(),
+        50
+    ).unwrap();
+
+    let mut vcr_osd_mono = ttf_context.load_font_from_rwops(
+        RWops::from_bytes(vcr_osd_mono_ttf).unwrap(),
+        20
+    ).unwrap();
+
+    let title_surface = baby_blocks.render("TETRIS")
+        .solid(Color::RGB(0,0,0)).unwrap();
+    let title_texture = texture_creator.create_texture_from_surface(&title_surface).unwrap();
+
+    let TextureQuery { width, height, .. } = title_texture.query();
+    let padding = 64;
+    let title_target = rect!(400, 20, width, height);
 
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
+    canvas.copy(&title_texture, None, Some(title_target)).unwrap();
     canvas.present();
 
     // Event Loop
@@ -153,7 +186,6 @@ fn update(engine: &mut TetrisEngine) {
 
 fn draw(engine: &mut TetrisEngine) {
     engine.canvas.set_draw_color(Color::RGB(255, 255, 255));
-    engine.canvas.clear();
 
     let size: u32= 20;
 
