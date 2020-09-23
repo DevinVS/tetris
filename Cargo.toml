@@ -1,6 +1,6 @@
 [package]
 name = "tetris"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Devin Vander Stelt <devin@vstelt.com>"]
 edition = "2018"
 
