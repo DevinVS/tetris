@@ -13,7 +13,7 @@ use tetris::tetromino::Tetromino;
 use tetris::TetrisMap;
 
 static baby_blocks_ttf: &'static [u8] = include_bytes!("fonts/baby_blocks.ttf");
-static vcr_osd_mono_ttf: &'static [u8] = include_bytes!("fonts/vcr_osd_mono.ttf");
+static pinscher_ttf: &'static [u8] = include_bytes!("fonts/pinscher.ttf");
 
 macro_rules! rect(
     ($x:expr, $y:expr, $w:expr, $h:expr) => (
@@ -147,22 +147,29 @@ fn main() {
         50
     ).unwrap();
 
-    let mut vcr_osd_mono = ttf_context.load_font_from_rwops(
-        RWops::from_bytes(vcr_osd_mono_ttf).unwrap(),
-        20
+    let mut pinscher = ttf_context.load_font_from_rwops(
+        RWops::from_bytes(pinscher_ttf).unwrap(),
+        40
     ).unwrap();
 
     let title_surface = baby_blocks.render("TETRIS")
         .solid(Color::RGB(0,0,0)).unwrap();
     let title_texture = texture_creator.create_texture_from_surface(&title_surface).unwrap();
 
-    let TextureQuery { width, height, .. } = title_texture.query();
-    let padding = 64;
-    let title_target = rect!(400, 20, width, height);
+    let TextureQuery { width: title_width, height: title_height, .. } = title_texture.query();
+    let title_target = rect!(400, 20, title_width, title_height);
+
+    let score_surface = pinscher.render("Score: 0")
+        .solid(Color::RGB(0, 0, 0)).unwrap();
+    let score_texture = texture_creator.create_texture_from_surface(&score_surface).unwrap();
+
+    let TextureQuery { width: score_width, height: score_height, .. } = score_texture.query();
+    let score_target = rect!(140, 460, score_width, score_height);
 
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
     canvas.copy(&title_texture, None, Some(title_target)).unwrap();
+    canvas.copy(&score_texture, None, Some(score_target)).unwrap();
     canvas.present();
 
     // Event Loop
@@ -177,11 +184,22 @@ fn main() {
 
         handle_events(&mut engine);
 
-        println!("{}", engine.get_delay());
         if std::time::Instant::now().duration_since(start_time).as_micros() > engine.get_delay() as u128 {
             update(&mut engine);
             start_time = std::time::Instant::now();
+
+            let score_surface = pinscher.render(format!("Score: {}", engine.score).as_str())
+                .solid(Color::RGB(0, 0, 0)).unwrap();
+            let score_texture = texture_creator.create_texture_from_surface(&score_surface).unwrap();
+
+            let TextureQuery { width: score_width, height: score_height, .. } = score_texture.query();
+            let score_target = rect!(140, 460, score_width, score_height);
+
+            engine.canvas.set_draw_color(Color::RGB(255, 255, 255));
+            engine.canvas.fill_rect(score_target).unwrap();
+            engine.canvas.copy(&score_texture, None, Some(score_target)).unwrap();
         }
+
 
         draw(&mut engine);
 
@@ -209,8 +227,6 @@ fn handle_events(engine: &mut TetrisEngine) {
 
 fn update(engine: &mut TetrisEngine) {
     let moved = engine.live_tetromino.down(&engine.tetris_map);
-
-    println!("{}", engine.score);
 
     if !moved {
         if engine.live_tetromino.y == 0 {
